@@ -141,7 +141,6 @@ function Create-DataLakeLinkedService {
     return $result
 }
 
-
 function Create-PowerBILinkedService {
     
     param(
@@ -494,6 +493,40 @@ function Create-Dataset {
     $itemTemplate = Get-Content -Path "$($DatasetsPath)/$($Name).json"
     $item = $itemTemplate.Replace("#LINKED_SERVICE_NAME#", $LinkedServiceName)
     $uri = "https://$($WorkspaceName).dev.azuresynapse.net/datasets/$($Name)?api-version=2019-06-01-preview"
+
+    Ensure-ValidTokens
+    $result = Invoke-RestMethod  -Uri $uri -Method PUT -Body $item -Headers @{ Authorization="Bearer $synapseToken" } -ContentType "application/json"
+    
+    return $result
+}
+
+function Create-Dataflow {
+    
+    param(
+    [parameter(Mandatory=$true)]
+    [String]
+    $DataflowsPath,
+
+    [parameter(Mandatory=$true)]
+    [String]
+    $WorkspaceName,
+
+    [parameter(Mandatory=$true)]
+    [String]
+    $Name,
+
+    [parameter(Mandatory=$true)]
+    [String]
+    $FileName,
+
+    [parameter(Mandatory=$false)]
+    [Hashtable]
+    $Parameters = $null
+    )
+
+    $itemTemplate = Get-Content -Path "$($DataflowsPath)/$($Name).json"
+    $item = $itemTemplate.Replace("#LINKED_SERVICE_NAME#", $LinkedServiceName)
+    $uri = "https://$($WorkspaceName).dev.azuresynapse.net/dataflows/$($Name)?api-version=2019-06-01-preview"
 
     Ensure-ValidTokens
     $result = Invoke-RestMethod  -Uri $uri -Method PUT -Body $item -Headers @{ Authorization="Bearer $synapseToken" } -ContentType "application/json"
@@ -1467,7 +1500,7 @@ function Count-CosmosDbDocuments {
     [String]
     $CosmosDbContainer
     )
-
+        
     $cosmosDbAccountKey = List-CosmosDBKeys -SubscriptionId $SubscriptionId -ResourceGroupName $ResourceGroupName -Name $CosmosDbAccountName
     Write-Information "Successfully retrieved Cosmos DB master key"
 
@@ -1652,6 +1685,7 @@ Export-ModuleMember -Function Create-IntegrationRuntime
 Export-ModuleMember -Function Get-IntegrationRuntime
 Export-ModuleMember -Function Delete-IntegrationRuntime
 Export-ModuleMember -Function Create-Dataset
+Export-ModuleMember -Function Create-Dataflow
 Export-ModuleMember -Function Create-Pipeline
 Export-ModuleMember -Function Run-Pipeline
 Export-ModuleMember -Function Get-PipelineRun

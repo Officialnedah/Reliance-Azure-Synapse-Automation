@@ -15,7 +15,6 @@ if($subs.GetType().IsArray -and $subs.length -gt 1){
         Select-AzSubscription -SubscriptionName $selectedSubName
 }
 
-
 $tentants = Get-azTenant | Select-Object -ExpandProperty Name
 if($tentants.GetType().IsArray -and $tentants.length -gt 1){
         $tentantsOptions = [System.Collections.ArrayList]::new()
@@ -138,9 +137,6 @@ Wait-ForOperation -WorkspaceName $workspaceName -OperationId $result.operationId
 
 Write-Information "Create Blob Storage linked service $($blobStorageAccountName)"
 
-# $result  = Create-PowerBILinkedService -TemplatesPath $templatesPath -WorkspaceName $workspaceName  -Name $powerbiLinkedName
-# Wait-ForOperation -WorkspaceName $workspaceName -OperationId $result.operationId
-
 $blobStorageAccountKey = List-StorageAccountKeys -SubscriptionId $subscriptionId -ResourceGroupName $resourceGroupName -Name $blobStorageAccountName
 $result = Create-BlobStorageLinkedService -TemplatesPath $templatesPath -WorkspaceName $workspaceName -Name $blobStorageAccountName  -Key $blobStorageAccountKey
 Wait-ForOperation -WorkspaceName $workspaceName -OperationId $result.operationId
@@ -159,7 +155,6 @@ $params = @{
         "PASSWORD" = $sqlPassword
         "DATALAKESTORAGEKEY" = $dataLakeAccountKey
         "DATALAKESTORAGEACCOUNTNAME" = $dataLakeAccountName
-        "COGNITIVESERVICENAME" = $azurecongnitive
 }
 
 try
@@ -208,24 +203,26 @@ $linkedServiceName = $powerbiLinkedName.ToLower()
 $result  = Create-PowerBILinkedService -TemplatesPath $templatesPath -WorkspaceName $workspaceName  -Name $linkedServiceName -PowerBIworkspaceId $pbigroupid -tenantID $global:logindomain
 Wait-ForOperation -WorkspaceName $workspaceName -OperationId $result.operationId
 Write-Information "Create Powerbi linked service"
-# Write-Information "Create data sets"
+
+Write-Information "Create data sets"
 
 $datasets = @{
         asamcw_product_asa = $sqlPoolName.ToLower()
         asamcw_product_csv = $dataLakeAccountName
         asamcw_wwi_salesmall_workload1_asa = "$($sqlPoolName.ToLower())_workload01"      
-        asamcw_wwi_salesmall_workload2_asa = "$($sqlPoolName.ToLower())_workload02" 
-        # name_for_the_new_dataset i.esame as namefor the json = name_of_the_linked_service_for_the_dataset
+        asamcw_wwi_salesmall_workload2_asa = "$($sqlPoolName.ToLower())_workload02"
+	# name_for_the_new_dataset i.esame as namefor the json = name_of_the_linked_service_for_the_dataset
         asamcw_campaignanalytics_asa = $sqlPoolName.ToLower()
         asamcw_customerinfo_asa = $sqlPoolName.ToLower()
         asamcw_customerinfo_csv = $dataLakeAccountName
-        asamcw_sales_parquet = $sqlPoolName.ToLower()
-        asamcw_campaignanalytics_csv = $dataLakeAccountName
+        asamcw_sales_parquet = $dataLakeAccountName
+	asamcw_sales_asa = $sqlPoolName.ToLower()
+        asamcw_campaignanalytics_csv = $dataLakeAccountName 
 }
 
-foreach ($dataset in $datasets.Keys) 
+foreach ($dataset in $datasets.Keys) 	
 {
-    try
+try
     {
 
         Write-Information "Creating dataset $($dataset)"
@@ -238,6 +235,30 @@ foreach ($dataset in $datasets.Keys)
     }
 }
 
+Write-Information "Create dataflows"
+
+$params = @{
+        "STORAGELINKEDSERVICENAME" = $blobStorageAccountName
+}
+$workloadDataflows = [ordered]@{
+        copy_sales_dataflow = "ASAMCW_Exercise_2_2018_and_2019_Sales"
+        copy_campaign_dataflow = "ASAMCW_Exercise_2_Campaign_Analytics_Data"
+        
+}
+
+foreach ($pipeline in $workloadDataflows.Keys) 
+{
+    try
+    {
+        Write-Information "Creating dataflow $($workloadDataflows[$dataflow])"
+        $result = Create-dataflow -DataflowsPath $dataflowsPath -WorkspaceName $workspaceName -Name $workloadDataflows[$dataflow] -FileName $workloadDataflows[$dataflow] -Parameters $params
+        Wait-ForOperation -WorkspaceName $workspaceName -OperationId $result.operationId
+    }
+    catch
+    {
+        write-host $_.exception;
+    }
+}
 
 Write-Information "Create pipelines"
 
@@ -248,6 +269,9 @@ $workloadPipelines = [ordered]@{
         copy_products_pipeline = "ASAMCW - Exercise 2 - Copy Product Information"
         execute_business_analyst_queries = "ASAMCW - Exercise 7 - ExecuteBusinessAnalystQueries"
         execute_data_analyst_and_ceo_queries = "ASAMCW - Exercise 7 - ExecuteDataAnalystAndCEOQueries"
+	copy_campaign_pipeline = "ASAMCW - Exercise 2 - Copy Campaign Analytics Data"
+	copy_customer_pipeline = "ASAMCW - Exercise 2 -Copy Customer Information"
+	copy_sales_pipeline = "ASAMCW_Exercise_2_2018_and_2019_Sales"
 }
 
 foreach ($pipeline in $workloadPipelines.Keys) 
@@ -472,21 +496,26 @@ foreach($path in $pathsAndCounts.Keys){
 }
 
 $asaArtifacts = [ordered]@{
-        ### add the resourced added to be validated
+	 ### add the resourced added to be validated
         "asamcw_campaignanalytics_asa" = "datasets"
         "asamcw_customerinfo_asa" = "datasets"
         "asamcw_customerinfo_csv" = "datasets"
         "asamcw_sales_parquet" = "datasets"
-        "asamcw_campaignanalytics_csv" = "datasets"
-
-
+	"asamcw_sales_asa" = "datasets"
+        "asamcw_campaignanalytics_csv" = "datasets"	
+	
         "asamcw_wwi_salesmall_workload1_asa" = "datasets"
         "asamcw_wwi_salesmall_workload2_asa" = "datasets"
         "asamcw_product_csv" = "datasets"
         "asamcw_product_asa" = "datasets"
+	"ASAMCW_Exercise_2_2018_and_2019_Sales" = "dataflows"
+        "ASAMCW_Exercise_2_Campaign_Analytics_Data" = "dataflows"
         "ASAMCW - Exercise 2 - Copy Product Information" = "pipelines"
         "ASAMCW - Exercise 7 - ExecuteBusinessAnalystQueries" = "pipelines"
         "ASAMCW - Exercise 7 - ExecuteDataAnalystAndCEOQueries" = "pipelines"
+	"ASAMCW - Exercise 2 - Copy Campaign Analytics Data" = "pipelines"
+	"ASAMCW - Exercise 2 -Copy Customer Information" = "pipelines"
+	"ASAMCW_Exercise_2_2018_and_2019_Sales" = "pipelines"
         "$($keyVaultName)" = "linkedServices"
         "$($dataLakeAccountName)" = "linkedServices"
         "$($blobStorageAccountName)" = "linkedServices"

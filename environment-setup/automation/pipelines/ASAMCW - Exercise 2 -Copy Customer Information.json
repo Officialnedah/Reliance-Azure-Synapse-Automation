@@ -1,0 +1,121 @@
+{
+    "name": "ASAMCW - Exercise 2 - Copy Customer Information",
+    "properties": {
+        "activities": [
+            {
+                "name": "Copy Customer Information",
+                "type": "Copy",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "DelimitedTextSource",
+                        "storeSettings": {
+                            "type": "AzureBlobFSReadSettings",
+                            "recursive": true,
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextReadSettings"
+                        }
+                    },
+                    "sink": {
+                        "type": "SqlDWSink",
+                        "preCopyScript": "truncate table wwi_mcw.CustomerInfo",
+                        "writeBehavior": "Insert",
+                        "sqlWriterUseTableLock": false,
+                        "disableMetricsCollection": false
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "mappings": [
+                            {
+                                "source": {
+                                    "type": "String",
+                                    "ordinal": 1
+                                },
+                                "sink": {
+                                    "name": "UserName",
+                                    "type": "String",
+                                    "physicalType": "nvarchar"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "type": "String",
+                                    "ordinal": 2
+                                },
+                                "sink": {
+                                    "name": "Gender",
+                                    "type": "String",
+                                    "physicalType": "nvarchar"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "type": "String",
+                                    "ordinal": 3
+                                },
+                                "sink": {
+                                    "name": "Phone",
+                                    "type": "String",
+                                    "physicalType": "nvarchar"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "type": "String",
+                                    "ordinal": 4
+                                },
+                                "sink": {
+                                    "name": "Email",
+                                    "type": "String",
+                                    "physicalType": "nvarchar"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "type": "String",
+                                    "ordinal": 5
+                                },
+                                "sink": {
+                                    "name": "CreditCard",
+                                    "type": "String",
+                                    "physicalType": "nvarchar"
+                                }
+                            }
+                        ],
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "asamcw_customerinfo_csv",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "asamcw_customerinfo_asa",
+                        "type": "DatasetReference"
+                    }
+                ]
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2022-11-21T17:06:20Z"
+    },
+    "type": "Microsoft.Synapse/workspaces/pipelines"
+}

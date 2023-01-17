@@ -1,0 +1,89 @@
+{
+    "name": "ASAMCW_Exercise_2_2018_and_2019_Sales",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "asamcw_sales_parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "salesdata"
+                }
+            ],
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "asamcw_sale_asa",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sale"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "source(output(",
+                "          TransactionId as string,",
+                "          CustomerId as integer,",
+                "          ProductId as short,",
+                "          Quantity as byte,",
+                "          Price as decimal(38,18),",
+                "          TotalAmount as decimal(38,18),",
+                "          TransactionDate as integer,",
+                "          ProfitAmount as decimal(38,18),",
+                "          Hour as byte,",
+                "          Minute as byte,",
+                "          StoreId as short,",
+                "          Year as string,",
+                "          Quarter as string,",
+                "          Month as string,",
+                "          Day as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     wildcardPaths:['sale-small/Year=2018/*/*/*/*','sale-small/Year=2019/*/*/*/*']) ~> salesdata",
+                "salesdata sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     input(",
+                "          TransactionId as string,",
+                "          CustomerId as integer,",
+                "          ProductId as integer,",
+                "          Quantity as integer,",
+                "          Price as decimal(9,2),",
+                "          TotalAmount as decimal(9,2),",
+                "          TransactionDateId as integer,",
+                "          ProfitAmount as decimal(9,2),",
+                "          Hour as integer,",
+                "          Minute as integer,",
+                "          StoreId as integer",
+                "     ),",
+                "     deletable:false,",
+                "     insertable:true,",
+                "     updateable:false,",
+                "     upsertable:false,",
+                "     format: 'table',",
+                "     staged: true,",
+                "     allowCopyCommand: true,",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     errorHandlingOption: 'stopOnFirstError',",
+                "     mapColumn(",
+                "          TransactionId,",
+                "          CustomerId,",
+                "          ProductId,",
+                "          Quantity,",
+                "          Price,",
+                "          TotalAmount,",
+                "          TransactionDateId = TransactionDate,",
+                "          ProfitAmount,",
+                "          Hour,",
+                "          Minute,",
+                "          StoreId",
+                "     )) ~> sale"
+            ]
+        }
+    }
+}
